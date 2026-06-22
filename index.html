@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>⛰️ 洗剑 · 云洗</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'STKaiti', 'KaiTi', '楷体', 'PingFang SC', 'Microsoft YaHei', serif;
+      background: #f5f0e8;
+      background-image: radial-gradient(ellipse at 30% 20%, #e8e0d4 0%, #d5cdc0 100%);
+      background-attachment: fixed;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 560px;
+      height: 96vh;
+      max-height: 880px;
+      display: flex;
+      flex-direction: column;
+      background: #f8f2e8;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(60, 50, 40, 0.15);
+      overflow: hidden;
+      border: 1px solid #d5c8b8;
+      position: relative;
+    }
+
+    /* 水墨装饰 */
+    .game-container::before {
+      content: '⛰️';
+      position: absolute;
+      top: -2px;
+      right: 16px;
+      font-size: 20px;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .game-container::after {
+      content: '⚔️';
+      position: absolute;
+      bottom: 50px;
+      left: 10px;
+      font-size: 18px;
+      opacity: 0.10;
+      pointer-events: none;
+      transform: rotate(-10deg);
+    }
+
+    .header {
+      background: #f0e8dc;
+      padding: 14px 18px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #d5c8b8;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 400;
+      color: #4a3a2e;
+      letter-spacing: 4px;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .header-title .sub {
+      font-size: 11px;
+      color: #8a7a6a;
+      letter-spacing: 2px;
+      margin-left: 6px;
+      font-weight: 300;
+    }
+    .header-btns {
+      margin-left: auto;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .header-btn {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 1px solid #c8bcae;
+      background: transparent;
+      color: #6a5a4a;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.5px;
+    }
+    .header-btn:active {
+      background: #d5c8b8;
+      color: #3a2a1e;
+    }
+
+    .mode-select {
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #c8bcae;
+      background: transparent;
+      font-size: 10px;
+      color: #6a5a4a;
+      outline: none;
+      cursor: pointer;
+      font-family: 'STKaiti', '楷体', serif;
+      max-width: 110px;
+      transition: all 0.15s;
+    }
+    .mode-select:focus {
+      border-color: #8a7a6a;
+    }
+
+    .status-panel {
+      background: #f5eee4;
+      padding: 8px 18px;
+      border-bottom: 1px solid #d5c8b8;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 14px;
+      flex-shrink: 0;
+    }
+    .status-item {
+      font-size: 11px;
+      color: #6a5a4a;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.5px;
+    }
+    .status-item span {
+      color: #4a3a2e;
+      font-weight: 600;
+    }
+    .status-bar {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin-top: 4px;
+    }
+    .bar-mini {
+      flex: 1;
+      min-width: 40px;
+      font-size: 9px;
+      color: #8a7a6a;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.3px;
+    }
+    .bar-track {
+      height: 3px;
+      background: #d5c8b8;
+      border-radius: 2px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+    .bar-fill.sens { background: #5a7a8a; }    /* 灵气 */
+    .bar-fill.full { background: #6a7a5a; }     /* 剑意 */
+    .bar-fill.fluid { background: #8a7a5a; }    /* 神识 */
+    .bar-fill.fatigue { background: #8a5a5a; }  /* 伤势 */
+
+    .location-tag {
+      padding: 4px 18px;
+      background: #f5eee4;
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: #8a7a6a;
+      border-bottom: 1px solid #d5c8b8;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .location-tag .loc { color: #4a3a2e; font-weight: 600; }
+    .location-tag .mode { color: #6a5a4a; font-style: italic; }
+
+    .memory-panel {
+      display: none;
+      background: #f5eee4;
+      padding: 10px 18px;
+      border-bottom: 1px solid #d5c8b8;
+      max-height: 160px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .memory-panel.show { display: block; }
+    .memory-section { margin-bottom: 6px; }
+    .memory-label {
+      font-size: 9px;
+      color: #8a7a6a;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'STKaiti', '楷体', serif;
+      font-weight: 500;
+    }
+    .memory-edit {
+      font-size: 9px;
+      color: #8a7a6a;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: 400;
+    }
+    .memory-text {
+      font-size: 12px;
+      color: #5a4a3a;
+      line-height: 1.7;
+      background: #f8f2e8;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid #d5c8b8;
+      min-height: 16px;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .memory-text:empty::before { content: '⛰️ 暂无记忆...'; color: #b8aa9a; }
+    .memory-counter { font-size: 8px; color: #b8aa9a; }
+
+    /* ===== 小说式消息区域 ===== */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 22px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: #f8f2e8;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 3px; }
+    .messages::-webkit-scrollbar-thumb { background: #d5c8b8; border-radius: 2px; }
+
+    .narr-msg {
+      font-family: 'STKaiti', '楷体', 'PingFang SC', serif;
+      font-size: 15px;
+      line-height: 2;
+      color: #3a2e24;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      text-align: justify;
+      letter-spacing: 0.5px;
+      text-indent: 2em;
+      box-shadow: none;
+      border-radius: 0;
+      max-width: 100%;
+      align-self: stretch;
+    }
+
+    .user-msg {
+      font-family: 'STKaiti', '楷体', 'PingFang SC', serif;
+      font-size: 15px;
+      line-height: 2;
+      color: #7a6a5a;
+      padding: 0;
+      margin: 6px 0 0 0;
+      background: transparent;
+      border: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      text-align: justify;
+      letter-spacing: 0.5px;
+      font-style: italic;
+      text-indent: 2em;
+      box-shadow: none;
+      border-radius: 0;
+      max-width: 100%;
+      align-self: stretch;
+    }
+
+    .sys-msg {
+      align-self: center;
+      font-size: 11px;
+      color: #8a7a6a;
+      padding: 6px 0;
+      background: transparent;
+      border: none;
+      max-width: 90%;
+      text-align: center;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 2px;
+      border-top: 1px solid #d5c8b8;
+      border-bottom: 1px solid #d5c8b8;
+      margin: 8px 0;
+      width: 100%;
+    }
+
+    .memory-notice {
+      align-self: center;
+      font-size: 10px;
+      color: #b8aa9a;
+      padding: 4px 0;
+      background: transparent;
+      border: none;
+      text-align: center;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.5px;
+      font-style: italic;
+    }
+
+    .divider-line {
+      align-self: center;
+      font-size: 12px;
+      color: #c8bcae;
+      padding: 8px 0 6px;
+      letter-spacing: 8px;
+      font-family: 'STKaiti', '楷体', serif;
+      text-align: center;
+      width: 100%;
+      border: none;
+    }
+
+    .thinking-msg {
+      font-family: 'STKaiti', '楷体', serif;
+      font-size: 14px;
+      line-height: 2;
+      color: #b8aa9a;
+      padding: 0;
+      margin: 4px 0;
+      background: transparent;
+      border: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      text-align: justify;
+      letter-spacing: 0.5px;
+      font-style: italic;
+      text-indent: 2em;
+      max-width: 100%;
+      align-self: stretch;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px 18px 14px;
+      gap: 8px;
+      background: #f8f2e8;
+      border-top: 1px solid #d5c8b8;
+      flex-shrink: 0;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid #d5c8b8;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #f5eee4;
+      color: #3a2e24;
+      outline: none;
+      font-family: 'STKaiti', '楷体', serif;
+      transition: border 0.2s;
+    }
+    .input-area input::placeholder { color: #b8aa9a; font-style: italic; }
+    .input-area input:focus {
+      border-color: #8a7a6a;
+    }
+    .send-btn {
+      background: transparent;
+      border: 1px solid #d5c8b8;
+      color: #8a7a6a;
+      font-size: 18px;
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .send-btn:active {
+      background: #d5c8b8;
+      color: #4a3a2e;
+      transform: scale(0.92);
+    }
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 4px;
+      padding: 4px 18px 8px;
+      flex-wrap: wrap;
+      background: #f8f2e8;
+      border-top: 1px solid #e8e0d4;
+      flex-shrink: 0;
+    }
+    .quick-btn {
+      font-size: 10px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      border: 1px solid #d5c8b8;
+      background: transparent;
+      color: #6a5a4a;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: 'STKaiti', '楷体', serif;
+      transition: all 0.1s;
+      letter-spacing: 0.5px;
+    }
+    .quick-btn:active {
+      background: #d5c8b8;
+      color: #3a2a1e;
+    }
+
+    /* 模态框 - 存档面板 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(40, 30, 20, 0.25);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-box {
+      background: #f8f2e8;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      padding: 24px 28px;
+      box-shadow: 0 20px 60px rgba(40, 30, 20, 0.15);
+      border: 1px solid #d5c8b8;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-box h3 {
+      color: #4a3a2e;
+      font-size: 18px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'STKaiti', '楷体', serif;
+      font-weight: 400;
+      letter-spacing: 2px;
+    }
+    .modal-box .close-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #8a7a6a;
+      cursor: pointer;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .save-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .save-row input {
+      flex: 1;
+      padding: 8px 14px;
+      border: 1px solid #d5c8b8;
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+      background: #f5eee4;
+      color: #3a2e24;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .save-row input:focus {
+      border-color: #8a7a6a;
+    }
+    .save-row button {
+      padding: 8px 18px;
+      border: 1px solid #d5c8b8;
+      border-radius: 4px;
+      background: transparent;
+      color: #4a3a2e;
+      font-weight: 400;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: 'STKaiti', '楷体', serif;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .save-row button:active {
+      background: #d5c8b8;
+      color: #3a2a1e;
+    }
+    .save-list {
+      list-style: none;
+      padding: 0;
+    }
+    .save-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      background: #f5eee4;
+      border-radius: 4px;
+      border: 1px solid #d5c8b8;
+    }
+    .save-list li .name {
+      font-weight: 400;
+      color: #4a3a2e;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .save-list li .time {
+      font-size: 10px;
+      color: #8a7a6a;
+      margin-left: 10px;
+      font-family: 'STKaiti', '楷体', serif;
+    }
+    .save-list li .actions button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-left: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: 0.1s;
+    }
+    .save-list li .actions button.load-btn { color: #6a7a5a; }
+    .save-list li .actions button.load-btn:active { background: #e8e0d4; }
+    .save-list li .actions button.del-btn { color: #8a5a5a; }
+    .save-list li .actions button.del-btn:active { background: #e8d4d4; }
+    .empty-saves {
+      color: #8a7a6a;
+      text-align: center;
+      padding: 16px;
+      font-style: italic;
+      font-family: 'STKaiti', '楷体', serif;
+      font-size: 13px;
+    }
+
+    .io-btn {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #c8bcae;
+      background: transparent;
+      color: #6a5a4a;
+      cursor: pointer;
+      font-family: 'STKaiti', '楷体', serif;
+      transition: all 0.15s;
+    }
+    .io-btn:active {
+      background: #d5c8b8;
+      color: #3a2a1e;
+    }
+
+    @media (max-width: 500px) {
+      .game-container { border-radius: 4px; height: 98vh; max-height: none; }
+      .header { padding: 10px 14px 8px; }
+      .header-title { font-size: 16px; }
+      .mode-select { max-width: 90px; font-size: 9px; }
+      .messages { padding: 14px 16px 10px; }
+      .narr-msg, .user-msg { font-size: 14px; line-height: 1.9; }
+      .modal-box { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <div class="header">
+    <span class="header-title">⛰️ 洗剑 <span class="sub">· 云洗</span></span>
+    <div class="header-btns">
+      <select id="modeSelect" class="mode-select" onchange="switchMode(this.value)">
+        <option value="剑修之路">⚔️ 剑修之路</option>
+        <option value="丹道求索">🌿 丹道求索</option>
+        <option value="符阵悟道">📜 符阵悟道</option>
+        <option value="体修苦行">🪨 体修苦行</option>
+        <option value="鬼道隐忍">🌙 鬼道隐忍</option>
+      </select>
+      <button class="header-btn" onclick="openSaveModal()">💾 存档</button>
+      <button class="header-btn" onclick="toggleMemoryPanel()">🧠 记忆</button>
+      <button class="header-btn" onclick="resetGame()">⟳ 重置</button>
+      <button class="header-btn" onclick="resetApiKey()">🔑 换Key</button>
+      <button class="io-btn" onclick="exportData()">📤 导出</button>
+      <button class="io-btn" onclick="document.getElementById('importFile').click()">📥 导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
+    </div>
+  </div>
+
+  <div class="status-panel" id="statusPanel">
+    <div class="status-item">📍 <span id="locDisplay">极北冰原</span></div>
+    <div class="status-item">🌀 <span id="stateDisplay">苏醒</span></div>
+    <div class="status-bar">
+      <div class="bar-mini">灵气 <span id="sensVal">20%</span>
+        <div class="bar-track"><div class="bar-fill sens" id="sensBar" style="width:20%"></div></div>
+      </div>
+      <div class="bar-mini">剑意 <span id="fullVal">85%</span>
+        <div class="bar-track"><div class="bar-fill full" id="fullBar" style="width:85%"></div></div>
+      </div>
+      <div class="bar-mini">神识 <span id="fluidVal">15%</span>
+        <div class="bar-track"><div class="bar-fill fluid" id="fluidBar" style="width:15%"></div></div>
+      </div>
+      <div class="bar-mini">伤势 <span id="fatigueVal">10%</span>
+        <div class="bar-track"><div class="bar-fill fatigue" id="fatigueBar" style="width:10%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="location-tag">
+    <span class="loc" id="locTag">📍 极北冰原</span>
+    <span class="mode" id="modeTag">⚔️ 剑修之路</span>
+  </div>
+
+  <div class="memory-panel" id="memoryPanel">
+    <div class="memory-section">
+      <div class="memory-label">
+        📝 短期记忆 <span class="memory-counter" id="shortCounter">(0/10轮)</span>
+        <button class="memory-edit" onclick="editMemory('short')">✏️</button>
+      </div>
+      <div class="memory-text" id="shortMemory" contenteditable="false"></div>
+    </div>
+    <div class="memory-section">
+      <div class="memory-label">
+        📚 长期记忆 <span class="memory-counter" id="longCounter">(0/50轮)</span>
+        <button class="memory-edit" onclick="editMemory('long')">✏️</button>
+      </div>
+      <div class="memory-text" id="longMemory" contenteditable="false"></div>
+    </div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="quick-actions" id="quickActions">
+    <button class="quick-btn" onclick="quickAction('观雪悟剑')">❄️ 观雪</button>
+    <button class="quick-btn" onclick="quickAction('探查冰原')">🔍 探查</button>
+    <button class="quick-btn" onclick="quickAction('运转功法')">🌀 行功</button>
+    <button class="quick-btn" onclick="quickAction('凝神内视')">🧘 内视</button>
+    <button class="quick-btn" onclick="quickAction('感应天地')">🌌 感应</button>
+    <button class="quick-btn" onclick="undoLastMessage()">↩ 撤回</button>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="描述你的行动..." autocomplete="off" enterkeyhint="send" />
+    <button class="send-btn" id="sendBtn">⚔️</button>
+  </div>
+</div>
+
+<!-- 存档模态框 -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal-box">
+    <h3>
+      ⛰️ 存档
+      <button class="close-btn" onclick="closeSaveModal()">✕</button>
+    </h3>
+    <div class="save-row">
+      <input type="text" id="saveNameInput" placeholder="存档名称..." />
+      <button onclick="saveGame()">保存</button>
+    </div>
+    <ul class="save-list" id="saveList">
+      <!-- 动态渲染 -->
+    </ul>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+//  🔑 API Key 管理
+// ============================================================
+let DEEPSEEK_API_KEY = '';
+
+function getApiKey() {
+  const saved = localStorage.getItem('deepseek_api_key');
+  if (saved && saved.startsWith('sk-')) {
+    DEEPSEEK_API_KEY = saved;
+    return true;
+  }
+  if (saved) {
+    localStorage.removeItem('deepseek_api_key');
+  }
+  const key = prompt('⛰️ 请输入你的 DeepSeek API Key（以 sk- 开头）：');
+  if (key && key.trim().startsWith('sk-')) {
+    DEEPSEEK_API_KEY = key.trim();
+    localStorage.setItem('deepseek_api_key', DEEPSEEK_API_KEY);
+    return true;
+  } else {
+    alert('❌ 无效的 API Key，请刷新页面重新输入。');
+    return false;
+  }
+}
+
+function resetApiKey() {
+  if (confirm('确定要清除保存的 API Key 吗？')) {
+    localStorage.removeItem('deepseek_api_key');
+    DEEPSEEK_API_KEY = '';
+    if (getApiKey()) {
+      alert('✅ 新的 API Key 已保存，游戏将重新加载。');
+      location.reload();
+    } else {
+      alert('❌ 未输入有效 Key，请刷新页面重试。');
+    }
+  }
+}
+window.resetApiKey = resetApiKey;
+
+// ============================================================
+//  游戏核心变量
+// ============================================================
+const messagesDiv = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const memoryPanel = document.getElementById('memoryPanel');
+const shortMemoryDiv = document.getElementById('shortMemory');
+const longMemoryDiv = document.getElementById('longMemory');
+const shortCounter = document.getElementById('shortCounter');
+const longCounter = document.getElementById('longCounter');
+const locDisplay = document.getElementById('locDisplay');
+const stateDisplay = document.getElementById('stateDisplay');
+const locTag = document.getElementById('locTag');
+const modeTag = document.getElementById('modeTag');
+const sensBar = document.getElementById('sensBar');
+const fullBar = document.getElementById('fullBar');
+const fluidBar = document.getElementById('fluidBar');
+const fatigueBar = document.getElementById('fatigueBar');
+const sensVal = document.getElementById('sensVal');
+const fullVal = document.getElementById('fullVal');
+const fluidVal = document.getElementById('fluidVal');
+const fatigueVal = document.getElementById('fatigueVal');
+const modeSelect = document.getElementById('modeSelect');
+
+let gameState = {
+  location: '极北冰原',
+  state: '苏醒',
+  sensitivity: 20,   // 灵气
+  fullness: 85,      // 剑意
+  fluid: 15,         // 神识
+  fatigue: 10,       // 伤势
+  eggs: { count: 0, progress: 0 },
+  motherTentacle: '无',
+  mode: '剑修之路',
+  npcFrequency: '正常',
+  // 修仙特有
+  cultivation: '炼气期',
+  swordIntent: '觉醒',
+  karma: 0,
+  knownNpcs: []
+};
+
+let memorySystem = {
+  shortMemory: '',
+  longMemory: '',
+  shortRoundCount: 0,
+  longRoundCount: 0,
+  totalRounds: 0,
+  shortThreshold: 10,
+  longThreshold: 50,
+  shortBuffer: [],
+  longBuffer: []
+};
+
+let conversationHistory = [];
+
+// ============================================================
+//  存档系统
+// ============================================================
+function getSaves() {
+  const saves = localStorage.getItem('game_saves');
+  return saves ? JSON.parse(saves) : {};
+}
+
+function setSaves(saves) {
+  localStorage.setItem('game_saves', JSON.stringify(saves));
+}
+
+function renderSaveList() {
+  const saves = getSaves();
+  const list = document.getElementById('saveList');
+  const keys = Object.keys(saves);
+  if (keys.length === 0) {
+    list.innerHTML = '<li class="empty-saves">⛰️ 暂无存档</li>';
+    return;
+  }
+  list.innerHTML = keys.map(name => {
+    const data = saves[name];
+    const time = data.timestamp ? new Date(data.timestamp).toLocaleString() : '未知时间';
+    return `<li>
+      <div>
+        <span class="name">⛰️ ${name}</span>
+        <span class="time">${time}</span>
+      </div>
+      <div class="actions">
+        <button class="load-btn" onclick="loadGame('${name}')" title="读取">📂</button>
+        <button class="del-btn" onclick="deleteSave('${name}')" title="删除">✕</button>
+      </div>
+    </li>`;
+  }).join('');
+}
+
+function openSaveModal() {
+  document.getElementById('saveModal').classList.add('active');
+  renderSaveList();
+  document.getElementById('saveNameInput').value = '';
+}
+window.openSaveModal = openSaveModal;
+
+function closeSaveModal() {
+  document.getElementById('saveModal').classList.remove('active');
+}
+window.closeSaveModal = closeSaveModal;
+
+document.getElementById('saveModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSaveModal();
+});
+
+function saveGame() {
+  const nameInput = document.getElementById('saveNameInput');
+  const name = nameInput.value.trim();
+  if (!name) {
+    alert('请给存档起个名字吧。');
+    return;
+  }
+  const saves = getSaves();
+  if (saves[name]) {
+    if (!confirm(`「${name}」已存在，要覆盖它吗？`)) return;
+  }
+  const saveData = {
+    gameState: JSON.parse(JSON.stringify(gameState)),
+    memorySystem: JSON.parse(JSON.stringify(memorySystem)),
+    conversationHistory: JSON.parse(JSON.stringify(conversationHistory)),
+    mode: gameState.mode,
+    timestamp: Date.now()
+  };
+  saves[name] = saveData;
+  setSaves(saves);
+  renderSaveList();
+  nameInput.value = '';
+  alert('✅ 存档「' + name + '」已保存。');
+}
+
+function loadGame(name) {
+  if (!confirm(`读取「${name}」将覆盖当前进度，确定吗？`)) return;
+  const saves = getSaves();
+  const data = saves[name];
+  if (!data) {
+    alert('存档不存在。');
+    return;
+  }
+  gameState = data.gameState;
+  memorySystem = data.memorySystem;
+  conversationHistory = data.conversationHistory || [];
+  if (conversationHistory.length === 0 || conversationHistory[0]?.role !== 'system') {
+    conversationHistory.unshift({ role: 'system', content: buildSystemPrompt() });
+  } else {
+    conversationHistory[0].content = buildSystemPrompt();
+  }
+  modeSelect.value = gameState.mode;
+  modeTag.textContent = '⚔️ ' + gameState.mode;
+  messagesDiv.innerHTML = '';
+  for (const msg of conversationHistory) {
+    if (msg.role === 'user') {
+      appendMessage('user', msg.content);
+    } else if (msg.role === 'assistant') {
+      appendMessage('narrative', msg.content);
+    }
+  }
+  updateStatusDisplay();
+  updateMemoryDisplay();
+  closeSaveModal();
+  alert('✅ 已读取「' + name + '」');
+}
+
+function deleteSave(name) {
+  if (!confirm(`确定要删除「${name}」吗？`)) return;
+  const saves = getSaves();
+  delete saves[name];
+  setSaves(saves);
+  renderSaveList();
+}
+
+// ============================================================
+//  模式切换
+// ============================================================
+function switchMode(newMode) {
+  if (newMode === gameState.mode) return;
+  if (!confirm(`切换到「${newMode}」模式？游戏将重新开始。`)) {
+    modeSelect.value = gameState.mode;
+    return;
+  }
+  gameState.mode = newMode;
+  localStorage.setItem('game_mode', newMode);
+  resetGameSilent();
+  initGame();
+  updateStatusDisplay();
+  modeTag.textContent = '⚔️ ' + newMode;
+  modeSelect.value = newMode;
+  appendMessage('system', '⛰️ 已切换到「' + newMode + '」模式');
+}
+window.switchMode = switchMode;
+
+function resetGameSilent() {
+  localStorage.removeItem('symbiosis_memory');
+  localStorage.removeItem('conversation_history');
+  memorySystem = {
+    shortMemory: '', longMemory: '',
+    shortRoundCount: 0, longRoundCount: 0, totalRounds: 0,
+    shortThreshold: 10, longThreshold: 50,
+    shortBuffer: [], longBuffer: []
+  };
+  gameState = {
+    location: '极北冰原',
+    state: '苏醒',
+    sensitivity: 20,
+    fullness: 85,
+    fluid: 15,
+    fatigue: 10,
+    eggs: { count: 0, progress: 0 },
+    motherTentacle: '无',
+    mode: gameState.mode,
+    npcFrequency: '正常',
+    cultivation: '炼气期',
+    swordIntent: '觉醒',
+    karma: 0,
+    knownNpcs: []
+  };
+  messagesDiv.innerHTML = '';
+  conversationHistory = [];
+  updateMemoryDisplay();
+  updateStatusDisplay();
+}
+// ============================================================
+//  记忆系统
+// ============================================================
+function loadMemory() {
+  try {
+    const saved = localStorage.getItem('symbiosis_memory');
+    if (saved) {
+      const data = JSON.parse(saved);
+      memorySystem.shortMemory = data.shortMemory || '';
+      memorySystem.longMemory = data.longMemory || '';
+      memorySystem.shortRoundCount = data.shortRoundCount || 0;
+      memorySystem.longRoundCount = data.longRoundCount || 0;
+      memorySystem.totalRounds = data.totalRounds || 0;
+      memorySystem.shortBuffer = data.shortBuffer || [];
+      memorySystem.longBuffer = data.longBuffer || [];
+    }
+  } catch(e) {}
+  updateMemoryDisplay();
+}
+
+function saveMemory() {
+  try {
+    localStorage.setItem('symbiosis_memory', JSON.stringify({
+      shortMemory: memorySystem.shortMemory,
+      longMemory: memorySystem.longMemory,
+      shortRoundCount: memorySystem.shortRoundCount,
+      longRoundCount: memorySystem.longRoundCount,
+      totalRounds: memorySystem.totalRounds,
+      shortBuffer: memorySystem.shortBuffer,
+      longBuffer: memorySystem.longBuffer
+    }));
+  } catch(e) {}
+}
+
+function updateMemoryDisplay() {
+  shortMemoryDiv.textContent = memorySystem.shortMemory || '';
+  longMemoryDiv.textContent = memorySystem.longMemory || '';
+  shortCounter.textContent = '(' + memorySystem.shortRoundCount + '/' + memorySystem.shortThreshold + '轮)';
+  longCounter.textContent = '(' + memorySystem.longRoundCount + '/' + memorySystem.longThreshold + '轮)';
+}
+
+function toggleMemoryPanel() {
+  memoryPanel.classList.toggle('show');
+}
+window.toggleMemoryPanel = toggleMemoryPanel;
+
+function editMemory(type) {
+  const div = type === 'short' ? shortMemoryDiv : longMemoryDiv;
+  const isEditing = div.contentEditable === 'true';
+  if (isEditing) {
+    div.contentEditable = 'false';
+    div.style.border = '1px solid #d5c8b8';
+    div.style.background = '#f5eee4';
+    if (type === 'short') memorySystem.shortMemory = div.textContent.trim();
+    else memorySystem.longMemory = div.textContent.trim();
+    saveMemory();
+    appendMessage('system', type === 'short' ? '📝 短期记忆已更新' : '📚 长期记忆已更新');
+  } else {
+    div.contentEditable = 'true';
+    div.style.border = '1px solid #8a7a6a';
+    div.style.background = '#f8f2e8';
+    div.focus();
+  }
+}
+window.editMemory = editMemory;
+
+// ============================================================
+//  总结和记忆更新
+// ============================================================
+async function summarizeMemory(messages, type) {
+  const summaryPrompt = type === 'short'
+    ? '请用1-3句话总结以下对话中发生的关键事件。只描述事实，不要评价。聚焦于：地点变化、修为状态、重要互动、NPC出现。\n\n对话内容：\n' + messages
+    : '请用2-4句话总结以下短期记忆，提取最重要的剧情发展和心境变化。\n\n短期记忆内容：\n' + messages;
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: '你是一个简洁的总结助手。只输出总结内容，不要加任何前缀或解释。' },
+          { role: 'user', content: summaryPrompt }
+        ],
+        stream: false,
+        temperature: 0.5,
+        max_tokens: 300
+      })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content?.trim() || '';
+    }
+  } catch(e) {}
+  return '';
+}
+
+async function checkAndUpdateMemory(userMsg, aiResponse) {
+  const shortSummary = '修士：' + userMsg.slice(0, 100) + ' | 天地：' + aiResponse.slice(0, 150);
+  memorySystem.shortBuffer.push(shortSummary);
+  memorySystem.shortRoundCount++;
+  memorySystem.longRoundCount++;
+  memorySystem.totalRounds++;
+
+  if (memorySystem.shortRoundCount >= memorySystem.shortThreshold) {
+    appendMessage('memory-notice', '🧠 正在生成短期记忆总结...');
+    const bufferText = memorySystem.shortBuffer.join('\n');
+    const newShortMemory = await summarizeMemory(bufferText, 'short');
+    if (newShortMemory) {
+      memorySystem.shortMemory = memorySystem.shortMemory
+        ? memorySystem.shortMemory + '\n' + newShortMemory
+        : newShortMemory;
+      memorySystem.shortBuffer = [];
+      memorySystem.shortRoundCount = 0;
+      updateMemoryDisplay();
+      saveMemory();
+      appendMessage('memory-notice', '📝 短期记忆已更新（' + memorySystem.totalRounds + '轮）');
+    }
+  }
+
+  if (memorySystem.longRoundCount >= memorySystem.longThreshold) {
+    appendMessage('memory-notice', '📚 正在生成长期记忆总结...');
+    const longSummary = await summarizeMemory(memorySystem.shortMemory, 'long');
+    if (longSummary) {
+      memorySystem.longMemory = memorySystem.longMemory
+        ? memorySystem.longMemory + '\n【第' + memorySystem.totalRounds + '轮】' + longSummary
+        : '【第' + memorySystem.totalRounds + '轮】' + longSummary;
+      memorySystem.longRoundCount = 0;
+      updateMemoryDisplay();
+      saveMemory();
+      appendMessage('memory-notice', '📚 长期记忆已更新（' + memorySystem.totalRounds + '轮）');
+    }
+  }
+  saveMemory();
+  updateMemoryDisplay();
+}
+
+// ============================================================
+//  游戏重置
+// ============================================================
+function resetGame() {
+  if (confirm('⛰️ 确定要重置当前进度吗？（存档不受影响）')) {
+    resetGameSilent();
+    initGame();
+    appendMessage('system', '⟳ 当前进度已重置');
+  }
+}
+window.resetGame = resetGame;
+
+// ============================================================
+//  状态更新
+// ============================================================
+function updateStatusDisplay() {
+  locDisplay.textContent = gameState.location;
+  stateDisplay.textContent = gameState.state;
+  locTag.textContent = '📍 ' + gameState.location;
+  modeTag.textContent = '⚔️ ' + gameState.mode;
+  sensBar.style.width = gameState.sensitivity + '%';
+  fullBar.style.width = gameState.fullness + '%';
+  fluidBar.style.width = gameState.fluid + '%';
+  fatigueBar.style.width = gameState.fatigue + '%';
+  sensVal.textContent = gameState.sensitivity + '%';
+  fullVal.textContent = gameState.fullness + '%';
+  fluidVal.textContent = gameState.fluid + '%';
+  fatigueVal.textContent = gameState.fatigue + '%';
+}
+
+function getBodyStatus() {
+  let status = '修为：' + (gameState.cultivation || '炼气期');
+  if (gameState.karma !== undefined) status += ' | 因果：' + gameState.karma;
+  return status;
+}
+
+// ============================================================
+//  构建系统提示词（修仙版）
+// ============================================================
+function buildSystemPrompt() {
+  let p = '';
+  p += '你是一个修仙世界的故事叙述者与引导者。你将扮演天地本身、所有NPC、以及命运的安排。\n\n';
+
+  // 三界概述
+  p += '【三界架构】\n';
+  p += '天地分三界——凡界（人间界，凡人与低阶修士共存，界面上限化神期）；灵界（高阶修士主场，界面上限大乘期）；仙界（长生彼岸，飞升者居所）。另有秘境、小世界、阴曹地府等特殊界面。\n\n';
+
+  // 修炼体系
+  p += '【修炼境界】\n';
+  p += '炼气期（一至九层）→ 筑基期（初期/中期/后期/圆满）→ 金丹期 → 元婴期 → 化神期 → 炼虚期 → 合体期 → 大乘期 → 渡劫期（飞升）\n\n';
+
+  p += '【修行流派】\n';
+  p += '剑修（攻伐第一）、法修（术法广大）、体修（肉身强横）、丹修（炼丹入道）、符修（符篆载道）、阵修（阵法通神）、器修（锻造法宝）\n\n';
+
+  // 天地规则
+  p += '【天地规则】\n';
+  p += '天劫：大境界突破必降天劫，威力随境界暴涨。心魔劫：境界瓶颈或执念深重时降临。界面压制：高界修士入低界实力大减。因果气运：受人恩惠、无故杀生皆结因果，因果重则阻碍修行。\n\n';
+
+  // 凡界势力
+  p += '【凡界势力】\n';
+  p += '正道宗门：青云剑宗（剑修）、丹霞丹宗（丹修）、玄符观（符修）、蛮武宗（体修）。\n';
+  p += '魔道宗门：幽冥谷（鬼修）、血煞门（血道）、玄阴教（心魔媚修）。\n';
+  p += '妖族：万妖谷统辖十万大山，分青丘狐族（幻道）、黑风牛族（体修）、金翅鹏族（主战）等。\n\n';
+
+  // 核心NPC（随机偶遇池）
+  p += '【核心人物（随机出现）】\n';
+  p += '1. 沈清寒：青云剑宗掌门亲传大弟子，白衣胜雪，剑心纯粹，人称"寒锋剑仙"。清冷寡言，对邪道零容忍，护短入骨。\n';
+  p += '2. 夜九鸢：幽冥谷少主，鬼道天才，玄色广袖长裙，行事诡谲，恩怨分明，最恨正道伪君子。\n';
+  p += '3. 苏墨白：丹霞丹宗少宗主，月白锦袍，玩世不恭，丹道天才，求医不分正邪，唯独不救滥杀无辜之辈。\n';
+  p += '4. 白灵汐：青丘狐族少主，银发垂腰，清丽绝尘，擅长幻术与入梦术，不喜纷争。\n';
+  p += '5. 林砚秋：玄符观执法堂首座弟子，青灰道袍，心思缜密算无遗策，符阵双绝。\n\n';
+
+  // 玩家设定
+  p += '【玩家身份】\n';
+  p += '姓名：云洗。男。年龄：9808岁（残魂重凝前）。种族：剑灵（凡人身躯陨落，残魂寄剑重生）。\n';
+  p += '本命剑：池玉——三尺青锋长剑，以自身髓血与万千天材地宝锻造，剑在则云洗存，剑毁则灵神俱散。\n';
+  p += '灵根：双灵根——纯水、极寒冰。特殊体质：天生剑骨——参悟剑意远超同辈，无剑在手而自生锋芒。\n';
+  p += '道心：逍遥道——恪守"至人无己，神人无功，圣人无名"。不困执念，不缚红尘，但求自在通透。\n';
+  p += '入道法门：以器入道——同境界战力稳居上游，可温养器物催生器灵，终至人器无分。\n\n';
+
+  // 功法与剑法
+  p += '【核心功法】《寒川洗剑经》\n';
+  p += '以水为脉，以冰为骨，以剑为身，以逍遥为神。分四卷：涧水篇（筑基-金丹）、冰川篇（金丹-元婴）、洗心篇（元婴-化神）、逍遥篇（炼虚-半步飞升）。\n\n';
+  p += '【剑法体系】\n';
+  p += '流水十三式：基础悟剑，顺势而为，无固定剑招。\n';
+  p += '寒川七剑：核心剑法——寒潭映月（虚招惑敌）、断川分冰（刚猛破敌）、流水不争先（守势）、冰魄凝锋（强化）、千里寒烟（群攻）、川流不息（久战）、寒川归寂（蓄力）。\n';
+  p += '池玉三绝（本命绝杀）：洗剑千重寒（大范围冰封）、玉碎一锋（单体破界）、逍遥无剑（至境万剑）。\n\n';
+
+  // 模式当前值
+  p += '【当前模式】' + gameState.mode + '\n';
+  if (gameState.mode === '剑修之路') p += '侧重战斗与悟剑，路遇同道或敌手的概率提升。\n';
+  else if (gameState.mode === '丹道求索') p += '侧重寻药炼丹、游历山河、救治苍生。\n';
+  else if (gameState.mode === '符阵悟道') p += '侧重智谋、布局、破解阵法谜题。\n';
+  else if (gameState.mode === '体修苦行') p += '侧重肉身锤炼、直面天险妖物。\n';
+  else if (gameState.mode === '鬼道隐忍') p += '侧重周旋于暗处、收集因果真相。\n\n';
+
+  // 状态
+  p += '【当前状态】\n';
+  p += '修为：' + (gameState.cultivation || '炼气期') + '。灵气：' + gameState.sensitivity + '%。剑意：' + gameState.fullness + '%。神识：' + gameState.fluid + '%。伤势：' + gameState.fatigue + '%。\n';
+  p += '因果值：' + (gameState.karma || 0) + '。\n\n';
+
+  // 记忆
+  if (memorySystem.longMemory) p += '📚 长期记忆：\n' + memorySystem.longMemory + '\n';
+  if (memorySystem.shortMemory) p += '📝 短期记忆：\n' + memorySystem.shortMemory + '\n';
+
+  // 叙事规则
+  p += '【叙事规则】\n';
+  p += '1. 以云洗的视角展开叙事，用第二人称"你"指代玩家。\n';
+  p += '2. 描写环境要富有画面感，符合水墨意境——苍茫、清冷、留白。\n';
+  p += '3. 对话要符合人物性格：沈清寒寡言、夜九鸢诡谲、苏墨白散漫、白灵汐清冷、林砚秋沉稳。\n';
+  p += '4. 根据玩家的行动更新状态（灵气、剑意、神识、伤势）。\n';
+  p += '5. 战斗场景要简洁有力，突出剑意与锋芒。\n';
+  p += '6. 随机偶遇NPC时，要自然融入剧情，不突兀。\n';
+  p += '7. 保持修仙世界的厚重感与因果感，不轻浮。\n';
+  p += '8. 回复开头用【地点】：当前所在位置，【状态】：当前心境/处境。\n\n';
+  p += '现在，开始叙事。玩家正在极北冰原苏醒，等待你的引导。';
+
+  return p;
+}
+
+// ============================================================
+//  消息处理
+// ============================================================
+function appendMessage(type, text) {
+  const d = document.createElement('div');
+  if (type === 'system') {
+    d.classList.add('sys-msg');
+  } else if (type === 'memory-notice') {
+    d.classList.add('memory-notice');
+  } else if (type === 'narrative') {
+    d.classList.add('narr-msg');
+  } else if (type === 'user') {
+    d.classList.add('user-msg');
+  } else if (type === 'divider') {
+    d.classList.add('divider-line');
+    d.textContent = '⛰️ ⛰️ ⛰️';
+    messagesDiv.appendChild(d);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    return d;
+  } else if (type === 'thinking') {
+    d.classList.add('thinking-msg');
+    d.textContent = text;
+    messagesDiv.appendChild(d);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    return d;
+  }
+  d.textContent = text;
+  messagesDiv.appendChild(d);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return d;
+}
+
+function parseStateFromResponse(text) {
+  const lm = text.match(/【地点】[：:]\s*(.+)/);
+  const sm = text.match(/【状态】[：:]\s*(.+)/);
+  if (lm) { const l = lm[1].trim(); if (l) gameState.location = l; }
+  if (sm) gameState.state = sm[1].trim();
+  // 尝试从文本中提取数值变化（简单版）
+  const sensMatch = text.match(/灵气\s*(\d+)%/);
+  const fullMatch = text.match(/剑意\s*(\d+)%/);
+  const fluidMatch = text.match(/神识\s*(\d+)%/);
+  const fatigueMatch = text.match(/伤势\s*(\d+)%/);
+  if (sensMatch) gameState.sensitivity = Math.max(0, Math.min(100, parseInt(sensMatch[1])));
+  if (fullMatch) gameState.fullness = Math.max(0, Math.min(100, parseInt(fullMatch[1])));
+  if (fluidMatch) gameState.fluid = Math.max(0, Math.min(100, parseInt(fluidMatch[1])));
+  if (fatigueMatch) gameState.fatigue = Math.max(0, Math.min(100, parseInt(fatigueMatch[1])));
+  updateStatusDisplay();
+        }
+  // ============================================================
+//  发送消息（核心）
+// ============================================================
+async function sendMessage(userText) {
+  if (!userText || !userText.trim()) return;
+  const trimmedText = userText.trim();
+  appendMessage('user', trimmedText);
+  userInput.value = '';
+  sendBtn.disabled = true;
+
+  conversationHistory.push({ role: 'user', content: trimmedText });
+  if (conversationHistory.length > 31) {
+    conversationHistory = [conversationHistory[0], ...conversationHistory.slice(-30)];
+  }
+  localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+
+  appendMessage('divider', '');
+  const thinkingDiv = appendMessage('thinking', '……');
+  let fullContent = '';
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: conversationHistory,
+        stream: true,
+        temperature: 0.85,
+        max_tokens: 2500
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || '请求失败 (' + response.status + ')');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t || !t.startsWith('data: ')) continue;
+        const ds = t.slice(6);
+        if (ds === '[DONE]') continue;
+        try {
+          const json = JSON.parse(ds);
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) {
+            fullContent += delta;
+            thinkingDiv.textContent = fullContent;
+            thinkingDiv.className = 'narr-msg';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          }
+        } catch(e) {}
+      }
+    }
+
+    parseStateFromResponse(fullContent);
+    conversationHistory.push({ role: 'assistant', content: fullContent });
+    localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+    conversationHistory[0] = { role: 'system', content: buildSystemPrompt() };
+    await checkAndUpdateMemory(trimmedText, fullContent.slice(0, 300));
+
+  } catch(error) {
+    thinkingDiv.textContent = '⛰️ 天地暂时没有回应...（错误：' + error.message + '）';
+    thinkingDiv.style.color = '#8a7a6a';
+    thinkingDiv.style.fontStyle = 'italic';
+  } finally {
+    sendBtn.disabled = false;
+    userInput.focus();
+  }
+}
+
+function quickAction(action) {
+  userInput.value = action;
+  sendMessage(action);
+}
+window.quickAction = quickAction;
+
+// ============================================================
+//  撤回功能
+// ============================================================
+function undoLastMessage() {
+  const userIndices = [];
+  const aiIndices = [];
+  for (let i = 0; i < conversationHistory.length; i++) {
+    if (conversationHistory[i].role === 'user') userIndices.push(i);
+    if (conversationHistory[i].role === 'assistant') aiIndices.push(i);
+  }
+  
+  if (userIndices.length === 0 || aiIndices.length === 0) {
+    alert('⛰️ 没有可以撤回的消息。');
+    return;
+  }
+  
+  const lastUserIdx = userIndices[userIndices.length - 1];
+  const lastAiIdx = aiIndices[aiIndices.length - 1];
+  const startIdx = Math.min(lastUserIdx, lastAiIdx);
+  const endIdx = Math.max(lastUserIdx, lastAiIdx);
+  
+  const toRemove = [];
+  for (let i = startIdx; i <= endIdx; i++) {
+    toRemove.push(i);
+  }
+  toRemove.sort((a, b) => b - a);
+  for (const idx of toRemove) {
+    conversationHistory.splice(idx, 1);
+  }
+  
+  localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+  
+  messagesDiv.innerHTML = '';
+  for (const msg of conversationHistory) {
+    if (msg.role === 'user') appendMessage('user', msg.content);
+    else if (msg.role === 'assistant') appendMessage('narrative', msg.content);
+  }
+  
+  if (conversationHistory.length > 1) {
+    appendMessage('system', '↩ 已撤回上一条消息');
+  } else {
+    appendMessage('system', '↩ 已撤回所有消息，游戏重新开始');
+  }
+  
+  updateStatusDisplay();
+  updateMemoryDisplay();
+}
+window.undoLastMessage = undoLastMessage;
+  // ============================================================
+//  导入导出功能
+// ============================================================
+function exportData() {
+  const data = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    gameState: gameState,
+    memorySystem: memorySystem,
+    conversationHistory: conversationHistory,
+    mode: gameState.mode,
+    apiKey: localStorage.getItem('deepseek_api_key') || '',
+    saves: localStorage.getItem('game_saves') ? JSON.parse(localStorage.getItem('game_saves')) : {}
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '洗剑_存档_' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert('✅ 数据已导出！');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.gameState || !data.memorySystem || !data.conversationHistory) {
+        alert('❌ 无效的存档文件，缺少必要数据。');
+        return;
+      }
+      if (!confirm('导入将覆盖当前所有进度（包括存档列表），确定继续吗？')) return;
+      
+      gameState = data.gameState;
+      memorySystem = data.memorySystem;
+      conversationHistory = data.conversationHistory || [];
+      if (data.mode) {
+        gameState.mode = data.mode;
+        modeSelect.value = data.mode;
+        modeTag.textContent = '⚔️ ' + data.mode;
+      }
+      if (data.apiKey && data.apiKey.startsWith('sk-')) {
+        localStorage.setItem('deepseek_api_key', data.apiKey);
+        DEEPSEEK_API_KEY = data.apiKey;
+      }
+      if (data.saves) {
+        setSaves(data.saves);
+      }
+      
+      messagesDiv.innerHTML = '';
+      if (conversationHistory.length === 0 || conversationHistory[0]?.role !== 'system') {
+        conversationHistory.unshift({ role: 'system', content: buildSystemPrompt() });
+      } else {
+        conversationHistory[0].content = buildSystemPrompt();
+      }
+      for (const msg of conversationHistory) {
+        if (msg.role === 'user') appendMessage('user', msg.content);
+        else if (msg.role === 'assistant') appendMessage('narrative', msg.content);
+      }
+      updateStatusDisplay();
+      updateMemoryDisplay();
+      localStorage.setItem('game_mode', gameState.mode);
+      localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+      saveMemory();
+      
+      alert('✅ 数据导入成功！');
+    } catch(err) {
+      alert('❌ 导入失败：文件格式错误。');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+//  初始化游戏
+// ============================================================
+function initGame() {
+  const systemPrompt = buildSystemPrompt();
+  if (conversationHistory.length === 0 || conversationHistory[0]?.role !== 'system') {
+    conversationHistory = [{ role: 'system', content: systemPrompt }];
+    localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+  } else {
+    conversationHistory[0].content = systemPrompt;
+    localStorage.setItem('conversation_history', JSON.stringify(conversationHistory));
+  }
+
+  updateStatusDisplay();
+  updateMemoryDisplay();
+  if (messagesDiv.children.length === 0) {
+    appendMessage('system', '⛰️ 洗剑 · 云洗');
+    appendMessage('system', '📜 九千八百载，残魂重凝，以剑灵之身再临世间。');
+    appendMessage('narrative',
+      '风雪如刃，割过冰峰之巅。\n\n' +
+      '你睁开眼时，天地之间只有一片苍茫的白。\n\n' +
+      '极北冰原的风雪千年未歇，而你的意识——是何时开始有了知觉的？你记不清。只记得漫长的黑暗、刺骨的寒意，以及一道始终不曾散去的剑鸣。\n\n' +
+      '身下的冰层中，倒映着一柄三尺青锋。剑身如寒池映玉，澄澈无尘，剑脊上刻着两个古篆小字——池玉。\n\n' +
+      '你低头看去，看见自己的手苍白如雪，指尖凝着一层薄薄的霜花。\n\n' +
+      '这是你的剑。\n' +
+      '这也是你的身。\n\n' +
+      '九千八百年的剑修大能，如今以器灵之身重临世间。\n\n' +
+      '风雪之外，有某种气息在靠近……\n\n' +
+      '【你可以：观雪悟剑 / 探查冰原 / 运转功法 / 凝神内视 / 感应天地】'
+    );
+  }
+}
+
+// ============================================================
+//  事件绑定
+// ============================================================
+sendBtn.addEventListener('click', function() {
+  const text = userInput.value.trim();
+  if (text) sendMessage(text);
+});
+
+userInput.addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const text = userInput.value.trim();
+    if (text) sendMessage(text);
+  }
+});
+
+// ============================================================
+//  页面加载
+// ============================================================
+window.addEventListener('load', function() {
+  if (!getApiKey()) {
+    document.body.innerHTML = '<div style="color:#4a3a2e;text-align:center;padding:40px;font-family:STKaiti,楷体,serif;font-size:16px;">⛰️ 需要有效的 API Key 才能启动游戏，请刷新页面重试。</div>';
+    return;
+  }
+
+  const savedMode = localStorage.getItem('game_mode');
+  if (savedMode && ['剑修之路','丹道求索','符阵悟道','体修苦行','鬼道隐忍'].includes(savedMode)) {
+    gameState.mode = savedMode;
+    modeSelect.value = savedMode;
+    modeTag.textContent = '⚔️ ' + savedMode;
+  } else {
+    gameState.mode = '剑修之路';
+    modeSelect.value = '剑修之路';
+    modeTag.textContent = '⚔️ 剑修之路';
+  }
+
+  const savedHistory = localStorage.getItem('conversation_history');
+  if (savedHistory) {
+    try {
+      conversationHistory = JSON.parse(savedHistory);
+      if (conversationHistory[0]?.role === 'system') {
+        conversationHistory[0].content = buildSystemPrompt();
+      } else {
+        conversationHistory.unshift({ role: 'system', content: buildSystemPrompt() });
+      }
+      for (const msg of conversationHistory) {
+        if (msg.role === 'user') appendMessage('user', msg.content);
+        else if (msg.role === 'assistant') appendMessage('narrative', msg.content);
+      }
+    } catch(e) {
+      conversationHistory = [{ role: 'system', content: buildSystemPrompt() }];
+    }
+  } else {
+    conversationHistory = [{ role: 'system', content: buildSystemPrompt() }];
+  }
+
+  loadMemory();
+  updateStatusDisplay();
+  updateMemoryDisplay();
+
+  if (messagesDiv.children.length === 0) {
+    appendMessage('system', '⛰️ 洗剑 · 云洗');
+    appendMessage('system', '📜 九千八百载，残魂重凝，以剑灵之身再临世间。');
+    appendMessage('narrative',
+      '风雪如刃，割过冰峰之巅。\n\n' +
+      '你睁开眼时，天地之间只有一片苍茫的白。\n\n' +
+      '极北冰原的风雪千年未歇，而你的意识——是何时开始有了知觉的？你记不清。只记得漫长的黑暗、刺骨的寒意，以及一道始终不曾散去的剑鸣。\n\n' +
+      '身下的冰层中，倒映着一柄三尺青锋。剑身如寒池映玉，澄澈无尘，剑脊上刻着两个古篆小字——池玉。\n\n' +
+      '你低头看去，看见自己的手苍白如雪，指尖凝着一层薄薄的霜花。\n\n' +
+      '这是你的剑。\n' +
+      '这也是你的身。\n\n' +
+      '九千八百年的剑修大能，如今以器灵之身重临世间。\n\n' +
+      '风雪之外，有某种气息在靠近……\n\n' +
+      '【你可以：观雪悟剑 / 探查冰原 / 运转功法 / 凝神内视 / 感应天地】'
+    );
+  }
+
+  userInput.focus();
+});
+</script>
+</body>
+</html>
